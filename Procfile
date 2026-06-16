@@ -1,1 +1,1 @@
-web: python -m oracle.agent
+web: python -m polyseer.agent

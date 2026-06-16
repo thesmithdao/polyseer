@@ -1,13 +1,9 @@
 """Configurable LLM backend.
 
 Pick the reasoning model with the LLM_PROVIDER env var:
-
-  • asi1      (default) — ASI:One, the Web3-native LLM. OpenAI-compatible API.
+  • asi1      (default) — ASI:One (Web3-native LLM), OpenAI-compatible API.
   • anthropic           — Claude via the official Anthropic SDK.
-  • openai              — any OpenAI / OpenAI-compatible endpoint.
-
-This keeps the project in-ecosystem by default (ASI:One) while letting anyone
-run it on the model they already pay for.
+  • openai              — OpenAI / any OpenAI-compatible endpoint.
 """
 
 from __future__ import annotations
@@ -27,7 +23,6 @@ async def synthesize(system: str, user: str) -> str:
             model_env="OPENAI_MODEL",
             default_model="gpt-4o-mini",
         )
-    # default: ASI:One (OpenAI-compatible surface)
     return await _openai_compatible(
         system, user,
         base_url=os.getenv("ASI_ONE_BASE_URL", "https://api.asi1.ai/v1"),
@@ -45,7 +40,7 @@ async def _anthropic(system: str, user: str) -> str:
     resp = await client.messages.create(
         model=model,
         max_tokens=4000,
-        thinking={"type": "adaptive"},  # let Claude decide how much to reason
+        thinking={"type": "adaptive"},
         system=system,
         messages=[{"role": "user", "content": user}],
     )

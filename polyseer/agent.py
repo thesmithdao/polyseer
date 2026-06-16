@@ -1,8 +1,7 @@
-"""Oracle of Odds — an ASI:One-compatible uAgent.
+"""Polyseer — an ASI:One-compatible uAgent (Chat Protocol over the uAgents framework).
 
-Runs as a *mailbox* agent: it executes wherever you host it (e.g. Railway) but
-registers in the Almanac and connects to Agentverse via the Mailroom, so ASI:One
-can route natural-language questions to it through the Chat Protocol.
+Runs on your own infra (e.g. Railway). Set AGENT_ENDPOINT to register as a public
+ENDPOINT agent; leave it unset to run as a MAILBOX agent.
 """
 
 from __future__ import annotations
@@ -20,49 +19,34 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
-from .forecaster import forecast
+from .router import handle
 
-AGENT_SEED = os.getenv("AGENT_SEED", "oracle-of-odds-dev-seed-change-me")
+AGENT_SEED = os.getenv("AGENT_SEED", "polyseer-dev-seed-change-me")
 PORT = int(os.getenv("PORT", "8000"))
-# If you give the service a public URL (e.g. on Railway), set AGENT_ENDPOINT to
-# that URL + "/submit" to register as a public ENDPOINT agent. Leave it unset to
-# run as a MAILBOX agent (outbound connection, no public URL needed).
-AGENT_ENDPOINT = os.getenv("AGENT_ENDPOINT")  # e.g. https://oracle.up.railway.app/submit
+AGENT_ENDPOINT = os.getenv("AGENT_ENDPOINT")  # e.g. https://polyseer.up.railway.app/submit
 
-_common = dict(
-    name="oracle-of-odds",
-    seed=AGENT_SEED,
-    port=PORT,
-    publish_agent_details=True,
-    readme_path="README.md",
-)
-if AGENT_ENDPOINT:
-    agent = Agent(endpoint=[AGENT_ENDPOINT], **_common)
-else:
-    agent = Agent(mailbox=True, **_common)
+_common = dict(name="polyseer", seed=AGENT_SEED, port=PORT,
+               publish_agent_details=True, readme_path="README.md")
+agent = Agent(endpoint=[AGENT_ENDPOINT], **_common) if AGENT_ENDPOINT else Agent(mailbox=True, **_common)
 
 chat = Protocol(spec=chat_protocol_spec)
 
 
 @chat.on_message(ChatMessage)
 async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
-    # Every chat message must be acknowledged.
     await ctx.send(
         sender,
         ChatAcknowledgement(timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id),
     )
-
     question = " ".join(item.text for item in msg.content if isinstance(item, TextContent)).strip()
     if not question:
         return
-
     ctx.logger.info(f"Question from {sender}: {question}")
     try:
-        answer = await forecast(question)
-    except Exception as exc:  # surface a useful message instead of going silent
-        ctx.logger.exception("forecast failed")
-        answer = f"Sorry — I couldn't compute the odds right now ({exc})."
-
+        answer = await handle(question)
+    except Exception as exc:
+        ctx.logger.exception("handler failed")
+        answer = f"Sorry — I couldn't answer that right now ({exc})."
     await ctx.send(
         sender,
         ChatMessage(
