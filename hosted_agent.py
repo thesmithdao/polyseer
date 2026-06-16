@@ -5,12 +5,20 @@ Uses only hosted-runtime imports: uagents, uagents_core, requests, stdlib.
 Set your key as an Agent Secret (e.g. ASI_ONE_API_KEY). Informational only.
 """
 
+import asyncio
 import json
 import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
 import requests
+
+# uagents (<=0.25) calls asyncio.get_event_loop() while constructing the Agent,
+# which raises on Python 3.14+ when no loop is running. Ensure one exists.
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,

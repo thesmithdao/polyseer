@@ -6,9 +6,17 @@ ENDPOINT agent; leave it unset to run as a MAILBOX agent.
 
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import datetime, timezone
 from uuid import uuid4
+
+# uagents (<=0.25) calls asyncio.get_event_loop() while constructing the Agent,
+# which raises on Python 3.14+ when no loop is running. Ensure one exists.
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import (
