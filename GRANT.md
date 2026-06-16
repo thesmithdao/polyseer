@@ -86,7 +86,7 @@ Polymarket APIs (no trading, no custody, no funds handled).
 
 ## Links
 
-- GitHub: `<your-repo-url>`
+- GitHub: https://github.com/thesmithdao/polyseer
 - Live demo / Agentverse profile: `<added on deploy>`
 - Demo video: `<added in week 3>`
 
