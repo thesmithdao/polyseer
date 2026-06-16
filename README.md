@@ -118,11 +118,23 @@ account (this pairs the agent so ASI:One can reach it).
    long random `AGENT_SEED` and your selected LLM key. (Railway injects `PORT`.)
 4. Deploy. Nixpacks installs `requirements.txt` and runs `python -m oracle.agent`
    (see [Procfile](Procfile) / [railway.json](railway.json)).
-5. Open the inspector link from the deploy logs once to pair the mailbox.
 
-The agent runs continuously and connects **outbound** to the Agentverse
-Mailroom, so it doesn't need a public inbound URL — the Mailroom queues
-messages if the process briefly restarts.
+Then pick **one** way to connect it to Agentverse:
+
+**A. Mailbox (default — no public URL).** Do nothing extra. The agent connects
+**outbound** to the Agentverse Mailroom, which queues messages if it restarts.
+Open the **inspector link** from the deploy logs once to pair it to your account.
+
+**B. Public endpoint (register the URL yourself).** Use this for the Agentverse
+*"Add your agent details → Name + Endpoint URL"* (external-agent) flow:
+1. Railway → **Settings → Networking → Generate Domain** to get a public URL.
+2. Set the variable `AGENT_ENDPOINT=https://<your-app>.up.railway.app/submit`
+   and redeploy. (Railway terminates TLS on 443 and forwards to `PORT`, so no
+   port in the URL; the uAgent serves incoming messages at `/submit`.)
+3. In Agentverse, paste the **Name** (`Oracle of Odds`) and that **Endpoint URL**.
+
+Mailbox is more robust to restarts (messages are queued); endpoint is what that
+registration screen expects. Both end up discoverable in the marketplace + ASI:One.
 
 ## Get discovered (marketplace + ASI:One)
 

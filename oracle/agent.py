@@ -24,15 +24,22 @@ from .forecaster import forecast
 
 AGENT_SEED = os.getenv("AGENT_SEED", "oracle-of-odds-dev-seed-change-me")
 PORT = int(os.getenv("PORT", "8000"))
+# If you give the service a public URL (e.g. on Railway), set AGENT_ENDPOINT to
+# that URL + "/submit" to register as a public ENDPOINT agent. Leave it unset to
+# run as a MAILBOX agent (outbound connection, no public URL needed).
+AGENT_ENDPOINT = os.getenv("AGENT_ENDPOINT")  # e.g. https://oracle.up.railway.app/submit
 
-agent = Agent(
+_common = dict(
     name="oracle-of-odds",
     seed=AGENT_SEED,
     port=PORT,
-    mailbox=True,
     publish_agent_details=True,
     readme_path="README.md",
 )
+if AGENT_ENDPOINT:
+    agent = Agent(endpoint=[AGENT_ENDPOINT], **_common)
+else:
+    agent = Agent(mailbox=True, **_common)
 
 chat = Protocol(spec=chat_protocol_spec)
 
