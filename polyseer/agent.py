@@ -33,8 +33,14 @@ AGENT_SEED = os.getenv("AGENT_SEED", "polyseer-dev-seed-change-me")
 PORT = int(os.getenv("PORT", "8000"))
 AGENT_ENDPOINT = os.getenv("AGENT_ENDPOINT")  # e.g. https://polyseer.up.railway.app/submit
 
+DESCRIPTION = (
+    "Polyseer is a natural-language oracle for Polymarket prediction markets. "
+    "Ask for live betting odds, implied probabilities, calibrated forecasts, "
+    "trending markets, and market discovery."
+)
 _common = dict(name="polyseer", seed=AGENT_SEED, port=PORT,
-               publish_agent_details=True, readme_path="README.md")
+               publish_agent_details=True, readme_path="README.md",
+               handle="polyseer", description=DESCRIPTION)
 agent = Agent(endpoint=[AGENT_ENDPOINT], **_common) if AGENT_ENDPOINT else Agent(mailbox=True, **_common)
 
 chat = Protocol(spec=chat_protocol_spec)
