@@ -47,10 +47,23 @@ ASI:One  ──Chat Protocol──▶  Oracle of Odds (uAgent, mailbox)
 
 | File | Responsibility |
 |---|---|
-| [oracle/agent.py](oracle/agent.py) | uAgent + Chat Protocol (ASI:One entrypoint) |
+| [oracle/agent.py](oracle/agent.py) | uAgent + Chat Protocol (ASI:One entrypoint) — **runs on Railway** |
 | [oracle/forecaster.py](oracle/forecaster.py) | Orchestration: question → markets → calibrated answer |
 | [oracle/polymarket.py](oracle/polymarket.py) | Public Polymarket Gamma client (defensive parsing) |
 | [oracle/llm.py](oracle/llm.py) | Pluggable LLM backend |
+| [hosted_agent.py](hosted_agent.py) | Single-file, allowlist-safe build for the **Agentverse-hosted** runtime (alternative to Railway) |
+
+### Two ways to run — both discoverable
+
+| | **Railway (this repo's main build)** | **Agentverse-hosted** ([hosted_agent.py](hosted_agent.py)) |
+|---|---|---|
+| Runs on | Your Railway infra | Fetch's ASI cloud |
+| Code | Full repo, any libraries (httpx, SDKs) | Single file, allowlist imports only |
+| Connection | **Mailbox** → Agentverse Mailroom | Native |
+| In marketplace + ASI:One? | **Yes** (Almanac + published chat manifest) | Yes |
+
+A **mailbox agent on Railway is still listed in the marketplace and routable from
+ASI:One** — you just own the compute. That's the open-source path below.
 
 ## Configurable LLM
 
@@ -111,12 +124,24 @@ The agent runs continuously and connects **outbound** to the Agentverse
 Mailroom, so it doesn't need a public inbound URL — the Mailroom queues
 messages if the process briefly restarts.
 
-## Use it from ASI:One
+## Get discovered (marketplace + ASI:One)
 
-Once the mailbox is paired and the manifest is published, ask ASI:One a
-forecasting question (*"what are the odds …"*) and it can route to this agent.
-The agent's description and example queries in this README are what ASI:One reads
-to decide when Oracle of Odds is the right agent for a query.
+Even though it runs on Railway, the agent shows up in the Agentverse marketplace
+and can be routed to by ASI:One. After pairing the mailbox, complete the
+[discovery setup](https://docs.agentverse.ai/documentation/agent-discovery/setup-guide)
+on the agent's Agentverse profile — these are the ranking signals that matter:
+
+- [x] **Chat Protocol published** — done in code (`publish_manifest=True`); this alone is a ranking boost.
+- [ ] **Keyword-rich README** — this file is the primary document ASI:One indexes for semantic routing. Keep the title, capabilities, use-case examples, and domain keywords (*odds, probability, forecast, prediction market, Polymarket*) current.
+- [ ] **Custom @handle** — short and memorable (≤20 chars), e.g. `@oracle-of-odds`.
+- [ ] **Name + avatar + About** — a profile image and concise About section boost recognition.
+- [ ] **Tags / category** — add categorical tags (forecasting, markets, crypto, prediction-markets).
+- [ ] **Active status** — only active agents are ranked; keep it running.
+- [ ] **≥10 interactions** — a minimum interaction count is required before it ranks; seed some real queries.
+
+Then ask ASI:One a forecasting question (*"what are the odds …"*) — it reads this
+README's capabilities and keywords to decide when Oracle of Odds is the right
+agent for the query.
 
 ---
 
