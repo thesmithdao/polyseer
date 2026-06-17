@@ -7,9 +7,14 @@ ENDPOINT agent; leave it unset to run as a MAILBOX agent.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from datetime import datetime, timezone
 from uuid import uuid4
+
+# httpx logs every request at INFO ("HTTP/1.1 200 OK") — quiet it so the logs
+# only surface real problems.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # uagents (<=0.25) calls asyncio.get_event_loop() while constructing the Agent,
 # which raises on Python 3.14+ when no loop is running. Ensure one exists.
@@ -45,6 +50,10 @@ agent = Agent(endpoint=[AGENT_ENDPOINT], **_common) if AGENT_ENDPOINT else Agent
 
 chat = Protocol(spec=chat_protocol_spec)
 
+# Per-user conversational memory: last topic, so follow-ups ("any others?",
+# "what about Brazil?") resolve against the previous question.
+_LAST_TOPIC: dict[str, str] = {}
+
 
 @chat.on_message(ChatMessage)
 async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
@@ -57,10 +66,12 @@ async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
         return
     ctx.logger.info(f"Question from {sender}: {question}")
     try:
-        answer = await handle(question)
+        answer, topic = await handle(question, _LAST_TOPIC.get(sender))
     except Exception as exc:
         ctx.logger.exception("handler failed")
-        answer = f"Sorry — I couldn't answer that right now ({exc})."
+        answer, topic = f"Sorry — I couldn't answer that right now ({exc}).", None
+    if topic:
+        _LAST_TOPIC[sender] = topic
     await ctx.send(
         sender,
         ChatMessage(

@@ -20,10 +20,22 @@ _QUERY_SYSTEM = (
 )
 
 
-async def extract_query(question: str) -> str:
-    """Turn a noisy user question into clean Polymarket search keywords."""
+async def extract_query(question: str, context: str | None = None) -> str:
+    """Turn a noisy user question into clean Polymarket search keywords.
+
+    If `context` (the previous topic) is given, follow-ups that lack their own
+    subject ('any others?', 'what about Brazil?', 'more') resolve against it.
+    """
+    user = question
+    if context:
+        user = (
+            f"Previous topic: {context}\nNew message: {question}\n\n"
+            "If the new message is a follow-up without its own clear subject "
+            "(e.g. 'any others?', 'what about X', 'more', 'and Brazil?'), base the "
+            "keywords on the previous topic; otherwise use the new message."
+        )
     try:
-        out = await synthesize(_QUERY_SYSTEM, question)
+        out = await synthesize(_QUERY_SYSTEM, user)
     except Exception:
         return question
     out = (out or "").strip().strip('"').splitlines()[0].strip()
