@@ -80,8 +80,7 @@ async def _ranked(question: str, query: str) -> tuple[str, str | None]:
     ranked = sorted(markets, key=lambda m: m.yes_prob, reverse=True)[:10]
     lines = [f"**{title} — current Polymarket odds:**"]
     for m in ranked:
-        label = m.group_title or m.question
-        lines.append(f"- {label}: {m.yes_prob:.0%}")
+        lines.append(f"- {m.label}: {m.yes_prob:.0%}")
     lines.append(f"\n[View on Polymarket]({ranked[0].url})")
     return "\n".join(lines), query
 
@@ -94,7 +93,7 @@ async def _discovery(query: str) -> tuple[str, str | None]:
     lines = [f'**Polymarket markets matching "{query}":**']
     for m in markets:
         outcomes = ", ".join(f"{label} {prob:.0%}" for label, prob in m.outcomes[:4])
-        lines.append(f"- [{m.title}]({m.url}): {outcomes}")
+        lines.append(f"- [{m.label}]({m.url}): {outcomes}")
     return "\n".join(lines), query
 
 
@@ -130,7 +129,7 @@ def _render(markets: list[Market]) -> str:
         if m.liquidity:
             meta.append(f"liquidity ${m.liquidity:,.0f}")
         suffix = f" ({'; '.join(meta)})" if meta else ""
-        out.append(f"- {m.title}: {outcomes}{suffix}")
+        out.append(f"- {m.label}: {outcomes}{suffix}")
     return "\n".join(out)
 
 
@@ -140,7 +139,7 @@ def _sources(markets: list[Market]) -> str:
         if m.url in seen:
             continue
         seen.add(m.url)
-        links.append(f"- [{m.title}]({m.url})")
+        links.append(f"- [{m.label}]({m.url})")
         if len(links) >= 4:
             break
     return "\n\n**Markets referenced:**\n" + "\n".join(links)

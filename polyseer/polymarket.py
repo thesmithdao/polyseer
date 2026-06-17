@@ -56,6 +56,11 @@ class Market:
         return self.event_title or self.question
 
     @property
+    def label(self) -> str:
+        """The specific market identity (candidate name / question), not the event."""
+        return self.group_title or self.question or self.event_title
+
+    @property
     def top_outcome(self) -> tuple[str, float] | None:
         return max(self.outcomes, key=lambda o: o[1]) if self.outcomes else None
 
