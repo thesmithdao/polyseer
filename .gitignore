@@ -10,3 +10,6 @@ env/
 .vscode/
 
 .claude/settings.local.json
+
+# Grant proposal — keep local/private
+GRANT.md
