@@ -11,6 +11,25 @@ from __future__ import annotations
 import os
 
 
+_QUERY_SYSTEM = (
+    "You convert a user's question into a short keyword search query for the Polymarket "
+    "prediction-market search engine. Output ONLY the 2-6 most important keywords: the "
+    "people, teams, assets, events, places, or dates involved. Drop filler ('odds', 'will', "
+    "'chance', 'what are the', 'price of'). Fix obvious typos. No punctuation, no quotes, no "
+    "explanation. Example: 'whats the odds Argentina beats Arlgeria?' -> 'Argentina Algeria'."
+)
+
+
+async def extract_query(question: str) -> str:
+    """Turn a noisy user question into clean Polymarket search keywords."""
+    try:
+        out = await synthesize(_QUERY_SYSTEM, question)
+    except Exception:
+        return question
+    out = (out or "").strip().strip('"').splitlines()[0].strip()
+    return out[:80] or question
+
+
 async def synthesize(system: str, user: str) -> str:
     provider = os.getenv("LLM_PROVIDER", "asi1").strip().lower()
     if provider == "anthropic":

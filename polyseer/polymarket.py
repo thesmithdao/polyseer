@@ -96,7 +96,8 @@ async def search_markets(query: str, limit: int = 6) -> list[Market]:
             m = _parse_market(raw, event_title=title)
             if m and not m.closed:
                 markets.append(m)
-    markets.sort(key=lambda m: m.liquidity, reverse=True)
+    # Keep Polymarket's relevance ordering — do NOT re-sort by liquidity, or
+    # high-liquidity but irrelevant markets (Fed, elections) bury the right one.
     return markets[:limit]
 
 
