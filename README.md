@@ -100,25 +100,6 @@ Run it on any always-on host (a server, VM, or container platform):
 It connects **outbound** to Agentverse via the Mailbox, so it needs no public URL —
 just keep the process running.
 
-## Get discovered (marketplace + ASI:One)
-
-The agent's README and profile are what ASI:One indexes for routing. From the
-[discovery setup guide](https://docs.agentverse.ai/documentation/agent-discovery/setup-guide):
-
-- [x] **Chat Protocol published** (`publish_manifest=True`) → "Chat with Agent" / ASI:One badge.
-- [x] **@handle** `@polyseerai` and **Name** `Polyseer`.
-- [ ] **Avatar + keyword-rich About** (Polymarket, odds, prediction markets, forecast).
-- [ ] **Tags:** `finance`, `prediction-markets`, `polymarket`, `forecasting`, `LLM`, `crypto`.
-- [ ] **Active status** (keep it running) + **≥10 real interactions** (ranking threshold).
-
----
-
-## Scope & non-goals
-
-**Read-only.** No trading, no wallet, no custody. Anchors on live Polymarket Gamma
-data and never fabricates markets or prices. Roadmap: live CLOB prices + resolution
-detail (phase 2), then discovery/verification polish (phase 3).
-
 ## License
 
 [MIT](LICENSE). Built on [Fetch.ai uAgents](https://innovationlab.fetch.ai/resources/docs/intro),

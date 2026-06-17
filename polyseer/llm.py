@@ -13,10 +13,13 @@ import os
 
 _QUERY_SYSTEM = (
     "You convert a user's question into a short keyword search query for the Polymarket "
-    "prediction-market search engine. Output ONLY the 2-6 most important keywords: the "
-    "people, teams, assets, events, places, or dates involved. Drop filler ('odds', 'will', "
-    "'chance', 'what are the', 'price of'). Fix obvious typos. No punctuation, no quotes, no "
-    "explanation. Example: 'whats the odds Argentina beats Arlgeria?' -> 'Argentina Algeria'."
+    "prediction-market search engine. Output ONLY the 2-6 most important keywords: the people, "
+    "teams, assets, events, places, or dates involved. Use the terms prediction markets actually "
+    "use — e.g. 'AGI' for human-level or general AI, ticker symbols for stocks, full names for "
+    "people/teams, 'Fed rate' for interest rates, 'recession', 'Bitcoin'. Drop filler ('odds', "
+    "'will', 'chance', 'what are the', 'price of'). Fix obvious typos. No punctuation, no quotes, "
+    "no explanation. Examples: 'odds Argentina beats Arlgeria?' -> 'Argentina Algeria'; "
+    "'will AI reach human-level reasoning by 2027?' -> 'AGI 2027'."
 )
 
 
