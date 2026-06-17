@@ -45,7 +45,11 @@ DESCRIPTION = (
 )
 _common = dict(name="polyseer", seed=AGENT_SEED, port=PORT,
                publish_agent_details=True, readme_path="README.md",
-               handle="polyseer", description=DESCRIPTION)
+               handle="polyseer", description=DESCRIPTION,
+               # On Railway redeploys the old container shuts down AFTER the new
+               # one registers; its default "mark inactive on shutdown" then
+               # overwrites the new instance's "active" status. Disable it.
+               mark_inactive_on_shutdown=False)
 agent = Agent(endpoint=[AGENT_ENDPOINT], **_common) if AGENT_ENDPOINT else Agent(mailbox=True, **_common)
 
 chat = Protocol(spec=chat_protocol_spec)

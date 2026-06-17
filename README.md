@@ -87,22 +87,18 @@ Run the agent:
 python -m polyseer.agent
 ```
 
-## Deploy on Railway
+## Deploy
 
-1. Push to GitHub → Railway **New Project → Deploy from GitHub repo**.
-2. Set env vars from [.env.example](.env.example): a long random `AGENT_SEED` + your LLM key.
-3. Deploy (runs `python -m polyseer.agent` via [Procfile](Procfile) / [railway.json](railway.json)).
+Run it on any always-on host (a server, VM, or container platform):
 
-Then connect it to Agentverse — pick **one**:
+1. Set the environment variables from [.env.example](.env.example): a long random
+   `AGENT_SEED` and your LLM key (`ASI_ONE_API_KEY`).
+2. Start it: `python -m polyseer.agent` (see [Procfile](Procfile)).
+3. On first run, open the **inspector link** from the logs once, sign into
+   Agentverse, and **Connect → Mailbox** to claim the agent under your account.
 
-**A. Mailbox (default).** Do nothing extra; open the **inspector link** from the
-logs once to pair. The Mailroom queues messages if it restarts.
-
-**B. Public endpoint.** For the *"Add your agent details → Name + Endpoint URL"* flow:
-Railway → **Settings → Networking → Generate Domain**, set
-`AGENT_ENDPOINT=https://<your-app>.up.railway.app/submit`, redeploy, then paste the
-**Name** (`Polyseer`) and that **Endpoint URL** into Agentverse. The uAgent serves
-incoming messages at `/submit`.
+It connects **outbound** to Agentverse via the Mailbox, so it needs no public URL —
+just keep the process running.
 
 ## Get discovered (marketplace + ASI:One)
 
@@ -110,7 +106,7 @@ The agent's README and profile are what ASI:One indexes for routing. From the
 [discovery setup guide](https://docs.agentverse.ai/documentation/agent-discovery/setup-guide):
 
 - [x] **Chat Protocol published** (`publish_manifest=True`) → "Chat with Agent" / ASI:One badge.
-- [ ] **@handle** `@polyseer` (≤20 chars) and **Name** `Polyseer` (≤30).
+- [x] **@handle** `@polyseerai` and **Name** `Polyseer`.
 - [ ] **Avatar + keyword-rich About** (Polymarket, odds, prediction markets, forecast).
 - [ ] **Tags:** `finance`, `prediction-markets`, `polymarket`, `forecasting`, `LLM`, `crypto`.
 - [ ] **Active status** (keep it running) + **≥10 real interactions** (ranking threshold).
