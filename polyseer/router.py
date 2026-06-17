@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from .llm import extract_query, synthesize
+from .llm import plan, synthesize
 from .polymarket import Market, search_events, search_markets, trending_markets
 
 SYSTEM_PROMPT = """You are Polyseer, a sharp prediction-market analyst. You read live Polymarket
@@ -38,30 +38,23 @@ automatically."""
 
 _MENTION = re.compile(r"@[A-Za-z0-9_]+")
 
-_TRENDING_KEYS = ("trending", "hottest", "hot market", "biggest market", "biggest markets",
-                  "top market", "most popular", "most active", "highest volume", "what's popular")
-_RANKED_KEYS = ("who will win", "who wins", "who'll win", "who is winning", "winner", "which team",
-                "most likely to win", "favorite to win", "favourite to win", "who will be the next",
-                "next president", "next prime minister")
-_DISCOVERY_KEYS = ("find market", "search market", "list market", "markets about", "markets on",
-                   "markets there", "show me market", "which markets", "what markets", "any market",
-                   "other markets", "prediction markets", "markets for", "scan ")
-
 
 def _clean(text: str) -> str:
     return _MENTION.sub("", text).strip()
 
 
 async def handle(question: str, prev_topic: str | None = None) -> tuple[str, str | None]:
+    """Dynamically plan (intent + query) via the LLM, then dispatch — no keyword rules."""
     q = _clean(question)
-    low = q.lower()
-    if any(k in low for k in _TRENDING_KEYS):
+    p = await plan(q, prev_topic)
+    intent, query = p["intent"], p["query"]
+    if intent == "trending":
         return await _trending(), prev_topic
-    if any(k in low for k in _RANKED_KEYS):
-        return await _ranked(q, prev_topic)
-    if any(k in low for k in _DISCOVERY_KEYS):
-        return await _discovery(q, prev_topic)
-    return await _answer(q, prev_topic)
+    if intent == "ranked":
+        return await _ranked(q, query)
+    if intent == "discovery":
+        return await _discovery(query)
+    return await _answer(q, query)
 
 
 async def _trending(limit: int = 8) -> str:
@@ -77,13 +70,12 @@ async def _trending(limit: int = 8) -> str:
     return "\n".join(lines)
 
 
-async def _ranked(question: str, prev_topic: str | None) -> tuple[str, str | None]:
+async def _ranked(question: str, query: str) -> tuple[str, str | None]:
     """Multi-outcome events: 'who will win X' -> ranked candidate list."""
-    query = await extract_query(question, prev_topic)
     events = await search_events(query, 6)
     chosen = next(((t, m) for t, m in events if len(m) >= 3), None)
     if not chosen:  # not a multi-outcome event — fall back to a normal estimate
-        return await _answer(question, prev_topic)
+        return await _answer(question, query)
     title, markets = chosen
     ranked = sorted(markets, key=lambda m: m.yes_prob, reverse=True)[:10]
     lines = [f"**{title} — current Polymarket odds:**"]
@@ -94,8 +86,7 @@ async def _ranked(question: str, prev_topic: str | None) -> tuple[str, str | Non
     return "\n".join(lines), query
 
 
-async def _discovery(question: str, prev_topic: str | None) -> tuple[str, str | None]:
-    query = await extract_query(question, prev_topic)
+async def _discovery(query: str) -> tuple[str, str | None]:
     markets = await search_markets(query, 8)
     if not markets:
         return (f'I couldn\'t find live Polymarket markets matching "{query}". '
@@ -107,8 +98,7 @@ async def _discovery(question: str, prev_topic: str | None) -> tuple[str, str | 
     return "\n".join(lines), query
 
 
-async def _answer(question: str, prev_topic: str | None) -> tuple[str, str | None]:
-    query = await extract_query(question, prev_topic)
+async def _answer(question: str, query: str) -> tuple[str, str | None]:
     markets = await search_markets(query, 8)
     today = datetime.now(timezone.utc).strftime("%B %d, %Y")
     if markets:

@@ -8,41 +8,46 @@ Pick the reasoning model with the LLM_PROVIDER env var:
 
 from __future__ import annotations
 
+import json
 import os
+import re
 
-
-_QUERY_SYSTEM = (
-    "You convert a user's question into a short keyword search query for the Polymarket "
-    "prediction-market search engine. Output ONLY the 2-6 most important keywords: the people, "
-    "teams, assets, events, places, or dates involved. Use the terms prediction markets actually "
-    "use — e.g. 'AGI' for human-level or general AI, ticker symbols for stocks, full names for "
-    "people/teams, 'Fed rate' for interest rates, 'recession', 'Bitcoin'. Drop filler ('odds', "
-    "'will', 'chance', 'what are the', 'price of'). Fix obvious typos. No punctuation, no quotes, "
-    "no explanation. Examples: 'odds Argentina beats Arlgeria?' -> 'Argentina Algeria'; "
-    "'will AI reach human-level reasoning by 2027?' -> 'AGI 2027'."
+_PLAN_SYSTEM = (
+    "You are the planner for a Polymarket prediction-market assistant. Read the user's message, "
+    "decide what they want, and extract a clean market search query.\n"
+    'Return ONLY a compact JSON object: {"intent": <forecast|ranked|trending|discovery>, "query": <keywords>}.\n'
+    "Intents:\n"
+    "- forecast: a probability question about a specific outcome ('odds of X', 'will Y happen', 'chance of Z').\n"
+    "- ranked: who/which wins among many candidates ('who will win the world cup', 'next president', 'favorite to win').\n"
+    "- trending: the hottest / biggest / most active markets right now, with no specific subject.\n"
+    "- discovery: browse or list what markets exist about a topic ('what markets on sports', 'find markets about AI').\n"
+    "For query: 2-6 keywords using the terms prediction markets actually use (e.g. 'AGI' for human-level/general AI, "
+    "ticker symbols for stocks, full names for people/teams, 'Fed rate', 'Bitcoin', 'recession'); drop filler, fix typos. "
+    "For trending, query may be empty. If a previous topic is given and the message is a follow-up "
+    "('any others?', 'what about Brazil?', 'more'), resolve the query against that topic."
 )
 
 
-async def extract_query(question: str, context: str | None = None) -> str:
-    """Turn a noisy user question into clean Polymarket search keywords.
+async def plan(question: str, context: str | None = None) -> dict:
+    """Dynamically classify intent and extract a search query (one LLM call).
 
-    If `context` (the previous topic) is given, follow-ups that lack their own
-    subject ('any others?', 'what about Brazil?', 'more') resolve against it.
+    Returns {"intent": "forecast"|"ranked"|"trending"|"discovery", "query": str}.
     """
-    user = question
-    if context:
-        user = (
-            f"Previous topic: {context}\nNew message: {question}\n\n"
-            "If the new message is a follow-up without its own clear subject "
-            "(e.g. 'any others?', 'what about X', 'more', 'and Brazil?'), base the "
-            "keywords on the previous topic; otherwise use the new message."
-        )
+    user = question if not context else f"Previous topic: {context}\nNew message: {question}"
     try:
-        out = await synthesize(_QUERY_SYSTEM, user)
+        raw = await synthesize(_PLAN_SYSTEM, user)
     except Exception:
-        return question
-    out = (out or "").strip().strip('"').splitlines()[0].strip()
-    return out[:80] or question
+        return {"intent": "forecast", "query": question}
+    match = re.search(r"\{.*\}", raw or "", re.S)
+    try:
+        data = json.loads(match.group(0)) if match else {}
+    except (ValueError, TypeError):
+        data = {}
+    intent = str(data.get("intent", "forecast")).strip().lower()
+    if intent not in ("forecast", "ranked", "trending", "discovery"):
+        intent = "forecast"
+    query = (str(data.get("query") or question)).strip().strip('"')[:80] or question
+    return {"intent": intent, "query": query}
 
 
 async def synthesize(system: str, user: str) -> str:
