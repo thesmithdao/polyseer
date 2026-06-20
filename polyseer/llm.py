@@ -14,8 +14,9 @@ import re
 
 _PLAN_SYSTEM = (
     "You are the planner for a Polymarket prediction-market assistant. Read the user's message, "
-    "decide what they want, and extract a clean market search query.\n"
-    'Return ONLY a compact JSON object: {"intent": <forecast|ranked|trending|discovery>, "query": <keywords>}.\n'
+    "decide what they want, extract a clean market search query, and flag any crypto asset.\n"
+    'Return ONLY a compact JSON object: '
+    '{"intent": <forecast|ranked|trending|discovery>, "query": <keywords>, "asset": <crypto ticker or empty>}.\n'
     "Intents:\n"
     "- forecast: a probability question about a specific outcome ('odds of X', 'will Y happen', 'chance of Z').\n"
     "- ranked: who/which wins among many candidates ('who will win the world cup', 'next president', 'favorite to win').\n"
@@ -23,21 +24,24 @@ _PLAN_SYSTEM = (
     "- discovery: browse or list what markets exist about a topic ('what markets on sports', 'find markets about AI').\n"
     "For query: 2-6 keywords using the terms prediction markets actually use (e.g. 'AGI' for human-level/general AI, "
     "ticker symbols for stocks, full names for people/teams, 'Fed rate', 'Bitcoin', 'recession'); drop filler, fix typos. "
-    "For trending, query may be empty. If a previous topic is given and the message is a follow-up "
-    "('any others?', 'what about Brazil?', 'more'), resolve the query against that topic."
+    "For trending, query may be empty.\n"
+    "For asset: set it to the crypto ticker (BTC, ETH, SOL, FET, ...) ONLY if the message is about a specific "
+    "cryptocurrency's price or a crypto price target; otherwise empty string.\n"
+    "If a previous topic is given and the message is a follow-up ('any others?', 'what about Brazil?', 'more'), "
+    "resolve the query against that topic."
 )
 
 
 async def plan(question: str, context: str | None = None) -> dict:
-    """Dynamically classify intent and extract a search query (one LLM call).
+    """Dynamically classify intent, extract a search query, and detect a crypto asset.
 
-    Returns {"intent": "forecast"|"ranked"|"trending"|"discovery", "query": str}.
+    Returns {"intent": ..., "query": str, "asset": str}.
     """
     user = question if not context else f"Previous topic: {context}\nNew message: {question}"
     try:
         raw = await synthesize(_PLAN_SYSTEM, user)
     except Exception:
-        return {"intent": "forecast", "query": question}
+        return {"intent": "forecast", "query": question, "asset": ""}
     match = re.search(r"\{.*\}", raw or "", re.S)
     try:
         data = json.loads(match.group(0)) if match else {}
@@ -47,7 +51,8 @@ async def plan(question: str, context: str | None = None) -> dict:
     if intent not in ("forecast", "ranked", "trending", "discovery"):
         intent = "forecast"
     query = (str(data.get("query") or question)).strip().strip('"')[:80] or question
-    return {"intent": intent, "query": query}
+    asset = re.sub(r"[^A-Za-z0-9]", "", str(data.get("asset") or "")).upper()[:10]
+    return {"intent": intent, "query": query, "asset": asset}
 
 
 async def synthesize(system: str, user: str) -> str:

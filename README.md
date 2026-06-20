@@ -24,34 +24,37 @@ discoverable in the **Agentverse marketplace**.
 | *"Find markets about the 2026 election"* | **Discovery** — a list of matching markets |
 
 ```
-You:    What are the odds the Fed cuts rates at the July meeting?
-Polyseer: **Estimate: ~72%**
-          - Polymarket "Fed decreases rates in July?" trades 71% Yes on $480k liquidity.
-          - CPI has softened; the market has drifted up over two weeks.
-          - Risk: a hot jobs report before the meeting pulls this down fast.
+You:    What are the odds the Fed cuts rates in July?
+Polyseer: ~72% — "Fed decreases rates in July?" is trading 71% Yes on $480k liquidity
+          and has drifted up over two weeks as CPI softened. The main thing that pulls
+          it back down is a hot jobs report before the meeting.
 
-          **Markets referenced:**
-          - [Fed decreases interest rates in July?](https://polymarket.com/event/...)
+You:    Will Bitcoin hit $100k by year end?
+Polyseer: ~25% — BTC is at $63.7k right now, so $100k means a +57% move in six months,
+          which the market prices at one-in-four. (live price: Binance, for context)
 ```
 
 ## How it works
 
 ```
 ASI:One / marketplace ──Chat Protocol──▶ Polyseer (uAgent)
-                                              │  keyword intent router
+                                              │  LLM planner — dynamic intent + query
                             ┌─────────────────┼─────────────────┐
                             ▼                 ▼                 ▼
-                       trending           discovery          forecast / lookup
+                       trending           discovery        forecast / ranked
                             └──── Polymarket Gamma API ────┘   + LLM synthesis
                                   (public, no auth)            (ASI:One / Claude / OpenAI)
+                                                  ▲
+            crypto questions: Binance public live spot ── supporting context only
 ```
 
 | File | Responsibility |
 |---|---|
-| [polyseer/agent.py](polyseer/agent.py) | uAgent + Chat Protocol entrypoint |
-| [polyseer/router.py](polyseer/router.py) | Keyword intent routing → answer |
+| [polyseer/agent.py](polyseer/agent.py) | uAgent + Chat Protocol; per-user memory |
+| [polyseer/router.py](polyseer/router.py) | Dispatch + answer synthesis |
+| [polyseer/llm.py](polyseer/llm.py) | LLM planner (dynamic intent/query) + synthesis |
 | [polyseer/polymarket.py](polyseer/polymarket.py) | Public Polymarket Gamma client |
-| [polyseer/llm.py](polyseer/llm.py) | Pluggable LLM backend |
+| [polyseer/prices.py](polyseer/prices.py) | Binance public live crypto spot (context) |
 | [hosted_agent.py](hosted_agent.py) | Single-file build for the **Agentverse-hosted** runtime |
 
 ## Configurable LLM
